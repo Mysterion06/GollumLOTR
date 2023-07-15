@@ -1,0 +1,222 @@
+//Credits Mysterion352
+//Commissioned by EZScape
+//Huge thanks to everyone who tested it
+//Special credits to cactus who managed to reverse this game and basically make any of the used pointers possible + providing GoG pointers
+
+state("ToM-Win64-Shipping", "Steam 11.07")
+{
+    byte menu: 0x05DDB040, 0x188, 0x40, 0x0, 0x38, 0x748, 0xE3;                     //menu = 0 = menu; 1 = gameplay
+    byte chapterPress: 0x05DDB040, 0x188, 0x388, 0x40, 0x0, 0x30, 0x360, 0x419;     //pressing chapter selection = 1
+    byte continuePress: 0x05DDB040, 0x188, 0x388, 0x40, 0x0, 0x30, 0x368, 0x419;    //pressing continue = 1
+    float PlayerX: 0x5DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0x260;          //menu = 19167.13867
+    float PlayerY: 0x5DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0x264;          //menu = -24539.62695
+    float PlayerZ: 0x5DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0x268;          //menu = -12605.33105
+    long LRT: 0x5DDB040, 0x188, 0x368, 0x58;                                        //random number during loading screens
+    long FGUID: 0x05DDB040, 0x38, 0x1D8;                                            //menu = 5358936765711859526 | Chapter 1: 5511256308024211726
+    string32 questID: 0x05DDB040, 0x188, 0x3D8, 0x58, 0x0;                          //use vars.chapterQuests as reference
+}
+
+state("ToM-Win64-Shipping", "GoG 11.07")
+{
+    byte menu: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x748, 0xE3;
+    byte chapterPress: 0x05DC2B60, 0x188, 0x388, 0x40, 0x0, 0x30, 0x360, 0x419;
+    byte continuePress: 0x05DC2B60, 0x188, 0x388, 0x40, 0x0, 0x30, 0x368, 0x419;
+    float PlayerX: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0x260;
+    float PlayerY: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0x264;
+    float PlayerZ: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0x268;
+    long LRT: 0x05DC2B60, 0x188, 0x368, 0x58;
+    long FGUID: 0x05DC2B60, 0x38, 0x1D8;
+    string32 questID: 0x05DC2B60, 0x188, 0x3D8, 0x58, 0x0;
+}
+
+startup
+{
+    if (timer.CurrentTimingMethod == TimingMethod.RealTime)
+    {
+        var timingMessage = MessageBox.Show (
+            "This game uses Time without Loads (Game Time) as the main timing method.\n"+
+            "LiveSplit is currently set to show Real Time (RTA).\n"+
+            "Would you like to set the timing method to Game Time? This will make verification easier.",
+            "LiveSplit | Gollum",
+            MessageBoxButtons.YesNo,MessageBoxIcon.Question);
+        if (timingMessage == DialogResult.Yes)
+        {
+            timer.CurrentTimingMethod = TimingMethod.GameTime;
+        }
+    }
+
+    //Chapter 2-10 beginning, index 0-8
+    vars.chapterQuests = new List<string>()
+    {"Chapter2_Quest01", "Chapter2_Quest07", "Chapter2_Quest11", "Chapter3_Quest13", "Chapter4_Quest18", "Chapter5_Quest20", "Chapter6_Quest26", "Chapter7_Quest28", "Chapter8_Quest30"};
+
+    vars.subSplits = new List<string>()
+    {"Chapter2_Quest03", "Chapter2_Quest04", "Chapter2_Quest05", "Chapter2_Quest06", "Chapter2_Quest09", "Chapter2_Quest10", "Chapter2_Quest12",
+    "Chapter3_Quest14", "Chapter3_Quest15", "Chapter3_Quest16", "Chapter3_Qeust17", "Chapter4_Quest19", "Chapter5_Quest21", "Chapter5_Quest22", "Chapter5_Quest23",
+    "Chapter5_Quest24", "Chapter5_Qeust25", "Chapter6_Quest27", "Chapter7_Quest29", "Chapter8_Quest31", "Chapter8_Quest32"};
+
+    vars.subSplitsSettings = new List<string>()
+    {"Dirt Eater", "The Rattler", "The Halls of Grond", "The Sabotage", "The Candle Man", "A Bird to Hatch", "The Candleman's Daughter", "The Tower of Light", "The Sewers",
+    "Slipping Through the Cracks", "The Gates of the Dark Tower", "Shelob's Lair", "The Blind Elf", "The Queen's Waterfalls", "The King's Chambers", "The King's Gardens",
+    "Escape the Elves", "The Breach", "The King's Grove", "At the Gate", "The Source"};
+
+
+    //Compare vars.chapterQuests with questID, if it sums up, add it into the list
+    vars.completedChapters = new List<string>();
+    vars.completedSubSplits = new List<string>();
+
+    //A variable for the reset function
+    vars.resetFunction = 0;
+
+    settings.Add("subs", true, "Activate Sub Splits");
+    settings.CurrentDefaultParent = "subs";
+    for(int i = 2; i <= 10; i++){
+        settings.Add("Chapter " + i);
+    }
+    for(int i = 0; i <= 20; i++){
+        if(i >= 0 && i <= 3)
+            settings.CurrentDefaultParent = "Chapter 2";
+        if(i >= 4 && i <= 5)
+            settings.CurrentDefaultParent = "Chapter 3";
+        if(i == 6)
+            settings.CurrentDefaultParent = "Chapter 4";
+        if(i >= 7 && i <= 10)
+            settings.CurrentDefaultParent = "Chapter 5";
+        if(i == 11)
+            settings.CurrentDefaultParent = "Chapter 6";
+        if(i >= 12 && i <= 16)
+            settings.CurrentDefaultParent = "Chapter 7";
+        if(i == 17)
+            settings.CurrentDefaultParent = "Chapter 8";
+        if(i == 18)
+            settings.CurrentDefaultParent = "Chapter 9";
+        if(i >= 19 && i <= 20)
+            settings.CurrentDefaultParent = "Chapter 10";
+        settings.Add("" + vars.subSplits[i].ToString(), true, "" + vars.subSplitsSettings[i].ToString());
+    }
+}
+
+init
+{
+    //Switch between Steam and GoG Version
+    switch (modules.First().ModuleMemorySize) {
+        default:
+        version = "Steam 11.07";
+        break;
+        case (104480768):
+        version = "Gog 11.07";
+        break;
+    }
+}
+
+start
+{
+    if(current.FGUID == 5511256308024211726 && current.questID == "Chapter1_Quest00" && current.LRT != 0){
+        vars.resetFunction = 0;
+        return true;
+    }
+}
+
+split
+{
+    //Chapter splits
+    if(vars.chapterQuests.Contains(current.questID) && !vars.completedChapters.Contains(current.questID)){
+        vars.completedChapters.Add(current.questID);
+        return true;
+    }
+
+    //Sub splits
+    if(settings["subs"]){
+        if(vars.subSplits.Contains(current.questID) && !vars.completedSubSplits.Contains(current.questID) && settings[current.questID]){
+            vars.completedSubSplits.Add(current.questID);
+            return true;
+        }
+    }
+
+
+    //Final split
+    if(current.PlayerX <= -22531f && current.PlayerX >= -22533f && current.PlayerY >= 24391f && current.PlayerY <= 24393f && current.PlayerZ <= -270f && current.PlayerZ >= -272f && current.questID == "8050"){
+        return true;
+    }
+}
+
+reset
+{
+    if(current.chapterPress == 1){
+        vars.resetFunction = 1;
+    }
+    //Resets the timer in the main menu when starting the first chapter
+    if(current.FGUID == 5511256308024211726 && old.FGUID == 0 && current.questID == "Chapter1_Quest00" && vars.resetFunction == 1){
+        return true;
+    }
+}
+
+isLoading
+{
+    //Stops the timer during loading screens with the exception of the timer not stopping during menu
+    if(current.PlayerX == 0 && current.PlayerY == 0 && current.PlayerZ == 0 && current.FGUID != 5358936765711859526 || current.LRT != 0){
+        return true;
+    } else{
+        return false;
+    }
+}
+
+
+
+/*
+Notes by cactus:
+
+GWorld = 0x05DDB040 (Steam) OR 0x05DC2B60 (GoG)
+    PersistentLevel = GWorld, 0x38
+        LevelBuildDataId = PersistentLevel, 0x1D8
+    OwningGameInstance = GWorld, 0x188
+        LocalPlayer = OwningGameInstance, 0x40, 0x0
+            PlayerController = LocalPlayer, 0x38
+                Character = PlayerController, 0x278
+                    Movement = Character, 0x298
+                        Velocity.X = Movement, 0xCC
+                        Velocity.Y = Movement, 0xD0
+                        Velocity.Z = Movement, 0xD4
+                        Location.X = Movement, 0x260
+                        Location.Y = Movement, 0x264
+                        Location.Z = Movement, 0x268
+                PauseMenuWidget = PlayerController, 0x748
+                    Visibility = PauseMenuWidget, 0xE3
+        LoadingScreenSystem = OwningGameInstance, 0x368
+            LoadingScreen = LoadingScreenSystem, 0x58
+        UIStackSystem = OwningGameInstance, 0x388
+            Stack = UIStackSystem, 0x40, 0x0
+                Window = StackItem, 0x30
+                    ChapterSelectionButton = Window, 0x360
+                        Pressed = ChapterSelectionButton, 0x419
+                    ContinueButton = Window, 0x368
+                        Pressed = ContinueButton, 0x419
+                    ChapterSelectionSlides = Window, 0x410
+                        FocusedChapterWidget = ChapterSelectionSlides, 0x378
+                            ChapterProgressNumber = FocusedChapterWidget, 0x4F0
+        StatsManager = OwningGameInstance, 0x3D8
+            MapID = StatsManager, 0x58, 0x0
+
+
+byte menu: GWorld->OwningGameInstance->LocalPlayer->PlayerController->PauseMenu->Visibility;
+byte chapterPress: GWorld->OwningGameInstance->UIStackSystem->Stack->Window->ChapterSelectionButton->Pressed;
+long CSID: GWorld->OwningGameInstance->UIStackSystem->Stack->Window->ChapterSelectionSlides->FocusedChapterWidget->ChapterProgressNumber;
+byte continuePress: GWorld->OwningGameInstance->UIStackSystem->Stack->Window->ContinueButton->Pressed;
+float PlayerX: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Location.X;
+float PlayerY: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Location.Y;
+float PlayerZ: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Location.Z;
+float PlayerVelocityX: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Velocity.X;
+float PlayerVelocityY: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Velocity.Y;
+float PlayerVelocityZ: GWorld->OwningGameInstance->LocalPlayer->PlayerController->Character->Movement->Velocity.Z;
+long LRT: GWorld->OwningGameInstance->LoadingScreenSystem->LoadingScreen;
+long FGUID: GWorld->PersistentLevel->LevelBuildDataId;
+string32 questID: GWorld->OwningGameInstance->StatsManager->MapID;
+
+float PlayerVelocityX: 0x05DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0xcc;  //menu = 0.0 (havent looked at menu with this - cactus)
+float PlayerVelocityY: 0x05DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0xd0;  //menu = 0.0 (havent looked at menu with this - cactus)
+float PlayerVelocityZ: 0x05DDB040, 0x188, 0x40, 0x0, 0x38, 0x278, 0x298, 0xd4;  //menu = 0.0 (havent looked at menu with this - cactus)
+
+float PlayerVelocityX: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0xcc;
+float PlayerVelocityY: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0xd0;
+float PlayerVelocityZ: 0x05DC2B60, 0x188, 0x40, 0x0, 0x38, 0x278, 0x98, 0xd4;    
+
+*/
